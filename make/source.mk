@@ -86,6 +86,7 @@ COMMON_SRC = \
             io/statusindicator.c \
             io/rcdevice.c \
             io/rcdevice_cam.c \
+            io/spektrum_rssi.c \
             msp/msp_serial.c \
             rx/fport.c \
             rx/ibus.c \
@@ -180,6 +181,7 @@ COMMON_SRC = \
             telemetry/msp_shared.c \
             telemetry/smartport.c \
             telemetry/telemetry.c \
+            telemetry/srxl.c \
             io/vtx.c \
             io/vtx_string.c \
             io/vtx_smartaudio.c \

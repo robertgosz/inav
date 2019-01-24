@@ -24,7 +24,7 @@
 #define USE_RX_PWM
 #define USE_RX_PPM
 #define USE_SERIAL_RX
-#define USE_SERIALRX_SPEKTRUM   // Cheap and fairly common protocol
+#define USE_SERIALRX_SPEKTRUM   // Cheap and fairly common protocol (SRXL, DSM2 and DSMX)
 #define USE_SERIALRX_SBUS       // Very common protocol
 #define USE_SERIALRX_IBUS       // Cheap FlySky & Turnigy receivers
 #define USE_SERIALRX_FPORT
@@ -119,6 +119,12 @@
 #define RTC_AUTOMATIC_DST
 // Wind estimator
 #define USE_WIND_ESTIMATOR
+
+// Spektrum
+#define USE_SPEKTRUM_REAL_RSSI
+#define USE_SPEKTRUM_FAKE_RSSI
+#define USE_SPEKTRUM_RSSI_PERCENT_CONVERSION
+#define USE_TELEMETRY_SRXL
 
 #else // FLASH_SIZE < 128
 #define CLI_MINIMAL_VERBOSITY

@@ -36,8 +36,11 @@
 
 #include "io/serial.h"
 
+#include "io/spektrum_rssi.h"
+
 #ifdef USE_TELEMETRY
 #include "telemetry/telemetry.h"
+#include "telemetry/srxl.h"
 #endif
 
 #include "rx/rx.h"
@@ -45,29 +48,17 @@
 
 // driver for spektrum satellite receiver / sbus
 
-#define SPEKTRUM_MAX_SUPPORTED_CHANNEL_COUNT 12
-#define SPEKTRUM_2048_CHANNEL_COUNT 12
-#define SPEKTRUM_1024_CHANNEL_COUNT 7
+#define SPEKTRUM_TELEMETRY_FRAME_DELAY_US 1000 // Gap between received Rc frame and transmited TM frame
 
-#define SPEK_FRAME_SIZE 16
-#define SPEKTRUM_NEEDED_FRAME_INTERVAL 5000
-
-#define SPEKTRUM_BAUDRATE 115200
-
-#define SPEKTRUM_MAX_FADE_PER_SEC 40
-#define SPEKTRUM_FADE_REPORTS_PER_SEC 2
+bool srxlEnabled = false;
+int32_t resolution;
+uint8_t rssi_channel;
 
 static uint8_t spek_chan_shift;
 static uint8_t spek_chan_mask;
+
 static bool rcFrameComplete = false;
 static bool spekHiRes = false;
-
-// Variables used for calculating a signal strength from satellite fade.
-//  This is time-variant and computed every second based on the fade
-//  count over the last second.
-static uint32_t spek_fade_last_sec = 0; // Stores the timestamp of the last second.
-static uint16_t spek_fade_last_sec_count = 0; // Stores the fade count at the last second.
-static uint8_t rssi_channel; // Stores the RX RSSI channel.
 
 static volatile uint8_t spekFrame[SPEK_FRAME_SIZE];
 
@@ -80,7 +71,6 @@ static IO_t BindPin = DEFIO_IO(NONE);
 #ifdef HARDWARE_BIND_PLUG
 static IO_t BindPlug = DEFIO_IO(NONE);
 #endif
-
 
 // Receive ISR callback
 static void spektrumDataReceive(uint16_t c, void *rxCallbackData)
@@ -102,50 +92,37 @@ static void spektrumDataReceive(uint16_t c, void *rxCallbackData)
 
     if (spekFramePosition < SPEK_FRAME_SIZE) {
         spekFrame[spekFramePosition++] = (uint8_t)c;
-        if (spekFramePosition == SPEK_FRAME_SIZE) {
-            rcFrameComplete = true;
-        } else {
+        if (spekFramePosition < SPEK_FRAME_SIZE) {
             rcFrameComplete = false;
+        } else {
+            rcFrameComplete = true;
         }
     }
 }
 
-static uint32_t spekChannelData[SPEKTRUM_MAX_SUPPORTED_CHANNEL_COUNT];
+uint32_t spekChannelData[SPEKTRUM_MAX_SUPPORTED_CHANNEL_COUNT];
 
 static uint8_t spektrumFrameStatus(rxRuntimeConfig_t *rxRuntimeConfig)
 {
     UNUSED(rxRuntimeConfig);
+    
+#if defined(USE_TELEMETRY_SRXL)
+    static timeUs_t telemetryFrameRequestedUs = 0;
+    timeUs_t currentTimeUs = micros();
+#endif
 
-    if (!rcFrameComplete) {
-        return RX_FRAME_PENDING;
-    }
+    uint8_t result = RX_FRAME_PENDING;
+    //int8_t spektrumRcDataSize;
+    //uint32_t vtxControl;
 
-    rcFrameComplete = false;
+    if (rcFrameComplete) {
+        rcFrameComplete = false;
+        
+#if defined(USE_SPEKTRUM_REAL_RSSI) || defined(USE_SPEKTRUM_FAKE_RSSI)
+        spektrumHandleRSSI(spekFrame);
+#endif
 
-    // Fetch the fade count
-    const uint16_t fade = (spekFrame[0] << 8) + spekFrame[1];
-    const uint32_t current_secs = millis() / (1000 / SPEKTRUM_FADE_REPORTS_PER_SEC);
-
-    if (spek_fade_last_sec == 0) {
-        // This is the first frame status received.
-        spek_fade_last_sec_count = fade;
-        spek_fade_last_sec = current_secs;
-    } else if (spek_fade_last_sec != current_secs) {
-        // If the difference is > 1, then we missed several seconds worth of frames and
-        // should just throw out the fade calc (as it's likely a full signal loss).
-        if ((current_secs - spek_fade_last_sec) == 1) {
-            if (rssi_channel != 0) {
-                if (spekHiRes)
-                    spekChannelData[rssi_channel] = 2048 - ((fade - spek_fade_last_sec_count) * 2048 / (SPEKTRUM_MAX_FADE_PER_SEC / SPEKTRUM_FADE_REPORTS_PER_SEC));
-                else
-                    spekChannelData[rssi_channel] = 1024 - ((fade - spek_fade_last_sec_count) * 1024 / (SPEKTRUM_MAX_FADE_PER_SEC / SPEKTRUM_FADE_REPORTS_PER_SEC));
-            }
-        }
-        spek_fade_last_sec_count = fade;
-        spek_fade_last_sec = current_secs;
-    }
-
-
+    // Get the RC control channel inputs
     for (int b = 3; b < SPEK_FRAME_SIZE; b += 2) {
         const uint8_t spekChannel = 0x0F & (spekFrame[b - 1] >> spek_chan_shift);
         if (spekChannel < rxRuntimeConfigPtr->channelCount && spekChannel < SPEKTRUM_MAX_SUPPORTED_CHANNEL_COUNT) {
@@ -155,7 +132,23 @@ static uint8_t spektrumFrameStatus(rxRuntimeConfig_t *rxRuntimeConfig)
         }
     }
 
-    return RX_FRAME_COMPLETE;
+#if defined(USE_TELEMETRY_SRXL)
+        if (srxlEnabled && (spekFrame[2] & 0x80) == 0) {
+            telemetryFrameRequestedUs = currentTimeUs;
+        }
+#endif
+
+        result = RX_FRAME_COMPLETE;
+    }
+    
+#if defined(USE_TELEMETRY_SRXL)
+    if (1 && telemetryFrameRequestedUs && cmpTimeUs(currentTimeUs, telemetryFrameRequestedUs) >= SPEKTRUM_TELEMETRY_FRAME_DELAY_US) {
+        telemetryFrameRequestedUs = 0;
+        result = (result & ~RX_FRAME_PENDING) | RX_FRAME_PROCESSING_REQUIRED;
+    }
+#endif
+
+    return result;
 }
 
 static uint16_t spektrumReadRawRC(const rxRuntimeConfig_t *rxRuntimeConfig, uint8_t chan)
