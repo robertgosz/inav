@@ -116,7 +116,7 @@ PG_REGISTER_WITH_RESET_TEMPLATE(rxConfig_t, rxConfig, PG_RX_CONFIG, 6);
 #define RX_MIN_USEX 885
 PG_RESET_TEMPLATE(rxConfig_t, rxConfig,
     .receiverType = DEFAULT_RX_TYPE,
-    .rcmap = {0, 1, 3, 2},      // Default to AETR map
+    .rcmap = {0, 1, 3, 2},       // Default to AETR map
     .halfDuplex = 0,
     .serialrx_provider = SERIALRX_PROVIDER,
     .rx_spi_protocol = RX_SPI_DEFAULT_PROTOCOL,
@@ -124,7 +124,7 @@ PG_RESET_TEMPLATE(rxConfig_t, rxConfig,
     .serialrx_inverted = 0,
     .mincheck = 1100,
     .maxcheck = 1900,
-    .rx_min_usec = RX_MIN_USEX,          // any of first 4 channels below this value will trigger rx loss detection
+    .rx_min_usec = RX_MIN_USEX,  // any of first 4 channels below this value will trigger rx loss detection
     .rx_max_usec = 2115,         // any of first 4 channels above this value will trigger rx loss detection
     .rssi_channel = 0,
     .rssiMin = RSSI_VISIBLE_VALUE_MIN,
@@ -180,6 +180,7 @@ bool serialRxInit(const rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeConfig
     bool enabled = false;
     switch (rxConfig->serialrx_provider) {
 #ifdef USE_SERIALRX_SPEKTRUM
+    case SERIALRX_SRXL:
     case SERIALRX_SPEKTRUM1024:
     case SERIALRX_SPEKTRUM2048:
         enabled = spektrumInit(rxConfig, rxRuntimeConfig);

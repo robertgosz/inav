@@ -48,6 +48,7 @@
 #include "telemetry/jetiexbus.h"
 #include "telemetry/ibus.h"
 #include "telemetry/crsf.h"
+#include "telemetry/srxl.h"
 
 PG_REGISTER_WITH_RESET_TEMPLATE(telemetryConfig_t, telemetryConfig, PG_TELEMETRY_CONFIG, 1);
 
@@ -100,6 +101,10 @@ void telemetryInit(void)
 
 #if defined(USE_SERIALRX_CRSF) && defined(USE_TELEMETRY_CRSF)
     initCrsfTelemetry();
+#endif
+
+#if defined(USE_TELEMETRY_SRXL)
+    initSrxlTelemetry();
 #endif
 
     telemetryCheckState();
