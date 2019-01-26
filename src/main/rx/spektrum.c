@@ -127,7 +127,7 @@ static uint8_t spektrumFrameStatus(rxRuntimeConfig_t *rxRuntimeConfig)
     if (rcFrameComplete) {
         rcFrameComplete = false;
 
-#ifdef USE_SPEKTRUM_REAL_RSSI || USE_SPEKTRUM_FAKE_RSSI
+#if defined(USE_SPEKTRUM_REAL_RSSI) || defined (USE_SPEKTRUM_FAKE_RSSI)
         spektrumHandleRSSI(spekFrame);
 #endif
 
@@ -254,7 +254,7 @@ void spektrumBind(rxConfig_t *rxConfig)
 }
 #endif // SPEKTRUM_BIND
 
-#if defined(USE_TELEMETRY_SRXL)
+#ifdef USE_TELEMETRY_SRXL
 static bool spektrumProcessFrame(const rxRuntimeConfig_t *rxRuntimeConfig)
 {
     UNUSED(rxRuntimeConfig);
@@ -303,7 +303,7 @@ bool spektrumInit(const rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeConfig
 
     switch (rxConfig->serialrx_provider) {
     case SERIALRX_SRXL:
-#if defined(USE_TELEMETRY_SRXL)
+#ifdef USE_TELEMETRY_SRXL
         srxlEnabled = (feature(FEATURE_TELEMETRY) && !portShared);
         FALLTHROUGH;
 #endif
