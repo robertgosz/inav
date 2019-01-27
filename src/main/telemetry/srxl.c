@@ -291,7 +291,6 @@ bool srxlFrameGpsStat(sbuf_t *dst, timeUs_t currentTimeUs)
     speedTmp = gpsSol.groundSpeed * 1944 / 1000;
     speedKnotsBcd = (speedTmp > 9999) ? dec2bcd(9999) : dec2bcd(speedTmp);
 
-//#ifdef USE_RTC_TIME
     // RTC
     if (rtcHasTime()) {
         rtcGetDateTime(&dt);
@@ -304,7 +303,6 @@ bool srxlFrameGpsStat(sbuf_t *dst, timeUs_t currentTimeUs)
         timeBcd = timeBcd | dec2bcd(dt.millis / 100);
         timeProvided = true;
     }
-//#endif
     timeBcd = (timeProvided) ? timeBcd : SPEKTRUM_TIME_UNKNOWN;
 
     // SRXL frame
@@ -375,7 +373,7 @@ bool srxlFrameFlightPackCurrent(sbuf_t *dst, timeUs_t currentTimeUs)
 
 #define SRXL_SCHEDULE_MANDATORY_COUNT  2 // Mandatory QOS and RPM sensors
 
-#define SRXL_FP_MAH_COUNT    1
+#define SRXL_FP_MAH_COUNT   1
 
 #if defined(USE_GPS)
 #define SRXL_GPS_LOC_COUNT  1
@@ -400,9 +398,7 @@ const srxlScheduleFnPtr srxlScheduleFuncs[SRXL_TOTAL_COUNT] = {
     srxlFrameGpsStat,
     srxlFrameGpsLoc,
 #endif
-
 };
-
 
 static void processSrxl(timeUs_t currentTimeUs)
 {

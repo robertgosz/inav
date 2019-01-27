@@ -164,6 +164,10 @@ void telemetryCheckState(void)
 #if defined(USE_SERIALRX_CRSF) && defined(USE_TELEMETRY_CRSF)
     checkCrsfTelemetryState();
 #endif
+
+#ifdef USE_TELEMETRY_SRXL
+    checkSrxlTelemetryState();
+#endif
 }
 
 void telemetryProcess(timeUs_t currentTimeUs)
@@ -200,6 +204,10 @@ void telemetryProcess(timeUs_t currentTimeUs)
 
 #if defined(USE_SERIALRX_CRSF) && defined(USE_TELEMETRY_CRSF)
     handleCrsfTelemetry(currentTimeUs);
+#endif
+
+#ifdef USE_TELEMETRY_SRXL
+    handleSrxlTelemetry(currentTimeUs);
 #endif
 }
 
