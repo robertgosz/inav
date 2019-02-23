@@ -160,6 +160,7 @@ typedef enum {
     RSSI_SOURCE_RX_CHANNEL,
     RSSI_SOURCE_RX_PROTOCOL,
     RSSI_SOURCE_MSP,
+    RSSI_SOURCE_FRAME_ERRORS,
 } rssiSource_e;
 
 extern rxRuntimeConfig_t rxRuntimeConfig; //!!TODO remove this extern, only needed once for channelCount

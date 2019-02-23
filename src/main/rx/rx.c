@@ -330,11 +330,6 @@ void rxUpdateRSSISource(void)
         return;
     }
 
-    if (rxConfig()->rssi_channel > 0) {
-        rssiSource = RSSI_SOURCE_RX_CHANNEL;
-        return;
-    }
-
     bool serialProtocolSupportsRSSI = false;
     switch (rxConfig()->receiverType) {
 #if defined(USE_SERIAL_RX)
@@ -488,7 +483,6 @@ bool calculateRxChannelsAndUpdateFailsafe(timeUs_t currentTimeUs)
         if (currentTimeUs > suspendRxSignalUntil) {
             skipRxSamples--;
         }
-
         return true;
     }
 
@@ -553,8 +547,9 @@ void parseRcChannels(const char *input)
 {
     for (const char *c = input; *c; c++) {
         const char *s = strchr(rcChannelLetters, *c);
-        if (s && (s < rcChannelLetters + MAX_MAPPABLE_RX_INPUTS))
+        if (s && (s < rcChannelLetters + MAX_MAPPABLE_RX_INPUTS)) {
             rxConfigMutable()->rcmap[s - rcChannelLetters] = c - input;
+        }
     }
 }
 
@@ -562,9 +557,7 @@ void parseRcChannels(const char *input)
 
 void setRSSI(uint16_t rssiValue, rssiSource_e source, bool filtered)
 {
-    if (source != rssiSource) {
-        return;
-    }
+    if (source != rssiSource) { return; }
 
     static uint16_t rssiSamples[RSSI_SAMPLE_COUNT];
     static uint8_t rssiSampleIndex = 0;
@@ -573,15 +566,12 @@ void setRSSI(uint16_t rssiValue, rssiSource_e source, bool filtered)
     if (filtered) {
         // Value is already filtered
         rssi = rssiValue;
-
     } else {
         sum = sum + rssiValue;
         sum = sum - rssiSamples[rssiSampleIndex];
         rssiSamples[rssiSampleIndex] = rssiValue;
         rssiSampleIndex = (rssiSampleIndex + 1) % RSSI_SAMPLE_COUNT;
-
         int16_t rssiMean = sum / RSSI_SAMPLE_COUNT;
-
         rssi = rssiMean;
     }
 
